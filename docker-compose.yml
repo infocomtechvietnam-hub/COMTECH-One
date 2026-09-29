@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: comtech-db
+    environment:
+      POSTGRES_USER: comtech_user
+      POSTGRES_PASSWORD: comtech_password
+      POSTGRES_DB: comtech_leads
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U comtech_user -d comtech_leads"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Next.js Application
+  web:
+    build: .
+    container_name: comtech-web
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://comtech_user:comtech_password@postgres:5432/comtech_leads
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+
+volumes:
+  postgres_data:
+
+networks:
+  default:
+    name: comtech-network

@@ -1,0 +1,35 @@
+{
+  "name": "@comtech/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Website công khai COMTECH (www.comtechvietnam.vn). Next.js App Router, SSG.",
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@comtech/contracts": "workspace:*",
+    "@comtech/content": "workspace:*",
+    "@fontsource/be-vietnam-pro": "5.3.0",
+    "@fontsource/inter": "5.3.0",
+    "@fontsource/jetbrains-mono": "5.3.0",
+    "lucide-react": "1.47.0",
+    "next": "16.3.6",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@comtech/config": "workspace:*",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "22.20.4",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "vitest": "5.0.1"
+  }
+}

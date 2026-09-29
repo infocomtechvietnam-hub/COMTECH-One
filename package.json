@@ -1,0 +1,26 @@
+{
+  "name": "comtech-one",
+  "version": "0.1.0",
+  "private": true,
+  "description": "COMTECH One: website công khai + nền tảng dữ liệu trung tâm COMTECH Việt Nam",
+  "packageManager": "pnpm@10.34.5",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "content:check": "pnpm --filter @comtech/content check",
+    "db:up": "docker compose -f infra/docker-compose.dev.yml up -d",
+    "db:down": "docker compose -f infra/docker-compose.dev.yml down",
+    "db:migrate": "pnpm --filter @comtech/db migrate:deploy",
+    "db:generate": "pnpm --filter @comtech/db generate"
+  },
+  "devDependencies": {
+    "turbo": "2.11.3",
+    "typescript": "5.9.3"
+  }
+}

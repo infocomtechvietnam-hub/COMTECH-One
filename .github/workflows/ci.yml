@@ -1,0 +1,43 @@
+# CI tối thiểu theo SPEC 37 (giai đoạn website-first).
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: comtech
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: comtech_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U comtech" --health-interval 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://comtech:ci@localhost:5432/comtech_test
+      DATABASE_URL: postgresql://comtech:ci@localhost:5432/comtech_test
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @comtech/contracts build
+      - run: pnpm --filter @comtech/db build
+      - run: pnpm -r typecheck
+      - run: pnpm -r test
+      # Kiểm tra migration khớp schema Prisma. Tạm không chặn: partial index và CHECK
+      # khai báo bằng SQL có thể bị Prisma báo lệch (Open Issue OI-W-05, xác minh ở CI thật).
+      - continue-on-error: true
+        run: pnpm --filter @comtech/db exec prisma migrate diff --from-migrations prisma/migrations --to-schema prisma/schema.prisma --exit-code
+      # Build production: không bao giờ bật CONTENT_PREVIEW
+      - run: pnpm --filter @comtech/web build
+        env: { APP_ENV: production, NEXT_PUBLIC_API_URL: https://api.comtechvietnam.vn }
+      - run: pnpm content:check
+      - run: pnpm audit --prod --audit-level high

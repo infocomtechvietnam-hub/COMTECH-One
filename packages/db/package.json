@@ -1,0 +1,27 @@
+{
+  "name": "@comtech/db",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Prisma schema, migration và client dùng chung cho api/worker. Web và mobile KHÔNG được import package này (N2).",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "scripts": {
+    "generate": "prisma generate",
+    "build": "prisma generate && tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:dev": "prisma migrate dev",
+    "test": "echo \"(db) kiểm thử tích hợp chạy trong apps/api\""
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "pg": "8.23.0"
+  },
+  "devDependencies": {
+    "@comtech/config": "workspace:*",
+    "@types/node": "22.20.4",
+    "prisma": "7.10.0",
+    "typescript": "5.9.3"
+  }
+}

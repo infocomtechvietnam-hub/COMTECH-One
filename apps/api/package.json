@@ -1,0 +1,42 @@
+{
+  "name": "@comtech/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "COMTECH One API (NestJS). Giai đoạn website-first: public lead API + health + outbox worker.",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/main.js",
+    "start:worker": "node dist/worker.js",
+    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@comtech/contracts": "workspace:*",
+    "@comtech/db": "workspace:*",
+    "@nestjs/common": "12.0.4",
+    "@nestjs/core": "12.0.4",
+    "@nestjs/platform-express": "12.0.4",
+    "@nestjs/throttler": "6.7.0",
+    "express": "5.2.1",
+    "helmet": "8.3.0",
+    "nodemailer": "10.0.10",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@comtech/config": "workspace:*",
+    "@nestjs/testing": "12.0.4",
+    "@swc/core": "1.16.2",
+    "@types/express": "5.0.6",
+    "@types/node": "22.20.4",
+    "@types/pg": "8.23.1",
+    "@types/supertest": "6.0.3",
+    "pg": "8.23.0",
+    "supertest": "7.3.0",
+    "typescript": "5.9.3",
+    "unplugin-swc": "2.0.0",
+    "vitest": "5.0.1"
+  }
+}

@@ -1,0 +1,110 @@
+// COMTECH One: Prisma schema
+// Nguồn chuẩn: SPEC V2.0 Mục 8 (nguyên tắc), Mục 10 (DDL tham chiếu).
+// Giai đoạn website-first: chỉ các bảng phục vụ website + lead + nền outbox.
+// Các bảng còn lại của SPEC Mục 10 được bổ sung ở các phase sau, KHÔNG tạo
+// bảng song song cho cùng một nghiệp vụ (MASTER PROMPT N1).
+//
+// Quy ước: bảng snake_case số nhiều, cột snake_case, PK UUID v7 sinh ở ứng dụng.
+// Partial index (WHERE deleted_at IS NULL ...) không biểu diễn được trong
+// Prisma: được khai báo trong migration SQL và ghi chú tại model.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Lead từ website và các nguồn khác (SPEC 10.5). Là nguồn dữ liệu cho CRM sau này:
+/// CRM đọc chung bảng này, không tạo bảng lead thứ hai.
+/// Index SQL: ux_leads_code (partial, deleted_at IS NULL), ix_leads_status_created.
+model Lead {
+  id                 String    @id @db.Uuid
+  lead_code          String    @db.VarChar(20)
+  full_name          String    @db.VarChar(160)
+  company_name       String?   @db.VarChar(255)
+  email              String?   @db.Citext
+  phone              String?   @db.VarChar(20)
+  industry_code      String?   @db.VarChar(40)
+  service_interest   String[]  @db.VarChar(80)
+  project_type       String?   @db.VarChar(40)
+  /// Tham chiếu admin_units (tỉnh) khi có danh mục địa giới 2 cấp [DATA SOURCE REQUIRED]
+  province_id        String?   @db.Uuid
+  location_text      String?
+  estimated_timeline String?   @db.VarChar(40)
+  message            String?
+  attachment_file_id String?   @db.Uuid
+  /// WEBSITE | REFERRAL | EVENT | PHONE | EMAIL | IMPORT
+  source             String    @db.VarChar(20)
+  utm                Json?
+  landing_page       String?
+  consent_at         DateTime? @db.Timestamptz(6)
+  consent_version    String?   @db.VarChar(20)
+  /// NEW | CONTACTED | QUALIFIED | DISQUALIFIED | CONVERTED
+  status             String    @default("NEW") @db.VarChar(20)
+  owner_employee_id  String?   @db.Uuid
+  customer_id        String?   @db.Uuid
+  opportunity_id     String?   @db.Uuid
+  spam_score         Decimal?  @db.Decimal(4, 2)
+  ip_address         String?   @db.Inet
+
+  // Cột chuẩn SPEC 8.2. created_by/updated_by/deleted_by sẽ có FK tới users khi có module identity.
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  created_by     String?   @db.Uuid
+  updated_at     DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  updated_by     String?   @db.Uuid
+  deleted_at     DateTime? @db.Timestamptz(6)
+  deleted_by     String?   @db.Uuid
+  deleted_reason String?
+  version        Int       @default(1)
+  /// REAL | DEMO | TEST | IMPORT
+  data_origin    String    @default("REAL") @db.VarChar(10)
+
+  @@map("leads")
+}
+
+/// Bộ đếm sinh mã nghiệp vụ trong transaction (SPEC 8.1, 10.4).
+model CodeSequence {
+  entity     String @db.VarChar(30)
+  period     String @db.VarChar(10)
+  last_value BigInt
+
+  @@id([entity, period])
+  @@map("code_sequences")
+}
+
+/// Transactional outbox (SPEC 10.13, 20.1). Ghi cùng transaction với dữ liệu nghiệp vụ.
+/// Index SQL: ix_outbox_unpublished (partial, published_at IS NULL).
+/// Mở rộng so với SPEC: next_attempt_at để lùi thời gian thử lại (ghi trong ADR-001).
+model DomainEvent {
+  id              String    @id @db.Uuid
+  event_type      String    @db.VarChar(60)
+  aggregate_type  String    @db.VarChar(30)
+  aggregate_id    String    @db.Uuid
+  payload         Json
+  occurred_at     DateTime  @default(now()) @db.Timestamptz(6)
+  published_at    DateTime? @db.Timestamptz(6)
+  attempts        Int       @default(0)
+  last_error      String?
+  next_attempt_at DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@map("domain_events")
+}
+
+/// Khóa chống gửi trùng (SPEC 10.13, 18.5). Hết hạn sau 24 giờ.
+/// Request công khai (chưa đăng nhập) dùng user_id = 00000000-0000-0000-0000-000000000000.
+model IdempotencyKey {
+  key             String   @db.VarChar(80)
+  user_id         String   @db.Uuid
+  endpoint        String   @db.VarChar(120)
+  request_hash    String   @db.Char(64)
+  response_status Int      @db.SmallInt
+  response_body   Json
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  @@id([key, user_id, endpoint])
+  @@map("idempotency_keys")
+}

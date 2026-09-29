@@ -1,0 +1,23 @@
+# Môi trường DEV (SPEC 36.2). Không dùng cho production.
+# Chạy: pnpm db:up
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: comtech
+      POSTGRES_PASSWORD: comtech_dev_only
+      POSTGRES_DB: comtech_one
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U comtech -d comtech_one"]
+      interval: 5s
+      retries: 10
+
+  # Hộp thư giả để xem email lead ở DEV: http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:latest
+    ports: ["1025:1025", "8025:8025"]
+
+volumes:
+  pgdata:
