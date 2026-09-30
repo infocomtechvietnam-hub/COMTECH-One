@@ -1,0 +1,281 @@
+PS C:\Users\NAT2026> # ============================================================
+PS C:\Users\NAT2026> # COMTECH One - File Classification & Structure Audit
+PS C:\Users\NAT2026> # Chạy trong D:\comtech-one hoặc tại thư mục bất kỳ rồi điều chỉnh path
+PS C:\Users\NAT2026> # ============================================================
+PS C:\Users\NAT2026>
+PS C:\Users\NAT2026> $rootPath = "D:\comtech-one"
+PS C:\Users\NAT2026>
+PS C:\Users\NAT2026> Write-Host "=== COMTECH One Project Structure Audit ===" -ForegroundColor Cyan
+=== COMTECH One Project Structure Audit ===
+PS C:\Users\NAT2026> Write-Host "Root: $rootPath`n" -ForegroundColor Cyan
+Root: D:\comtech-one
+
+PS C:\Users\NAT2026>
+PS C:\Users\NAT2026> # 1. Cấu trúc thư mục chính
+PS C:\Users\NAT2026> Write-Host "=== FOLDER STRUCTURE ===" -ForegroundColor Yellow
+=== FOLDER STRUCTURE ===
+PS C:\Users\NAT2026> Get-ChildItem -Path $rootPath -Directory -Force | Select-Object Name, @{
+>>     Name="Items";
+>>     Expression={(Get-ChildItem -Path $_.FullName -Recurse -Force | Measure-Object).Count}
+>> } | Format-Table -AutoSize
+
+Name         Items
+----         -----
+.git           367
+.github          2
+.turbo           7
+apps           805
+docs             9
+infra            1
+node_modules 37157
+packages       172
+
+
+PS C:\Users\NAT2026>
+PS C:\Users\NAT2026> # 2. Phân loại file theo loại
+PS C:\Users\NAT2026> Write-Host "`n=== FILE TYPE DISTRIBUTION ===" -ForegroundColor Yellow
+
+=== FILE TYPE DISTRIBUTION ===
+PS C:\Users\NAT2026> Get-ChildItem -Path $rootPath -File -Recurse -Force | Group-Object -Property @{
+>>     Expression={
+>>         $ext = [System.IO.Path]::GetExtension($_)
+>>         if ($ext -eq "") { return "(no-ext)" }
+>>         return $ext
+>>     }
+>> } | Sort-Object -Property Count -Descending | Format-Table Count, Name -AutoSize
+
+Count Name
+----- ----
+11134 .js
+ 8062 .map
+ 6676 .ts
+ 2487 .mjs
+ 1184 .json
+  959 .md
+  778 (no-ext)
+  558 .cjs
+  382 .css
+  320 .woff2
+  312 .woff
+  240 .cts
+  139 .mts
+   73 .gz
+   66 .ps1
+   66 .CMD
+   49 .yml
+   44 .txt
+   39 .meta
+   37 .sst
+   27 .tsx
+   21 .wasm
+   20 .eslintrc
+   17 .nycrc
+   14 .sample
+   10 .png
+    7 .flow
+    7 .cc
+    7 .node
+    6 .npmignore
+    6 .scss
+    6 .h
+    5 .html
+    5 .editorconfig
+    5 .log
+    4 .bundle
+    4 .del
+    4 .exe
+    4 .yaml
+    2 .gitattributes
+    2 .rscinfo
+    2 .hash-wasm
+    2 .dll
+    2 .data
+    2 .zst
+    2 .tsbuildinfo
+    2 .jsonc
+    1 .bnf
+    1 .gyp
+    1 .toml
+    1 .prisma
+    1 .astro
+    1 .jshintrc
+    1 .sql
+    1 .sh
+    1 .previewinfo
+    1 .gitignore
+    1 .zip
+    1 .example
+    1 .markdown
+    1 .gif
+    1 .lock
+    1 .ttf
+
+
+PS C:\Users\NAT2026>
+PS C:\Users\NAT2026> # 3. Kiểm tra file quan trọng
+PS C:\Users\NAT2026> Write-Host "`n=== CRITICAL PROJECT FILES ===" -ForegroundColor Yellow
+
+=== CRITICAL PROJECT FILES ===
+PS C:\Users\NAT2026> $criticalFiles = @(
+>>     "package.json",
+>>     "pnpm-lock.yaml",
+>>     "tsconfig.json",
+>>     ".env.example",
+>>     "README.md",
+>>     "docker-compose.yml",
+>>     ".github/workflows/ci.yml",
+>>     "apps/web/package.json",
+>>     "apps/api/package.json",
+>>     "packages/db/package.json"
+>> )
+PS C:\Users\NAT2026>
+PS C:\Users\NAT2026> foreach ($file in $criticalFiles) {
+>>     $fullPath = Join-Path $rootPath $file
+>>     $exists = Test-Path $fullPath
+>>     $status = if ($exists) { "✓ EXISTS" } else { "✗ MISSING" }
+>>     Write-Host "$status`t$file" -ForegroundColor $(if ($exists) { "Green" } else { "Red" })
+>> }
+✓ EXISTS        package.json
+✓ EXISTS        pnpm-lock.yaml
+✗ MISSING       tsconfig.json
+✓ EXISTS        .env.example
+✓ EXISTS        README.md
+✓ EXISTS        docker-compose.yml
+✓ EXISTS        .github/workflows/ci.yml
+✓ EXISTS        apps/web/package.json
+✓ EXISTS        apps/api/package.json
+✓ EXISTS        packages/db/package.json
+PS C:\Users\NAT2026>
+PS C:\Users\NAT2026> # 4. Thư mục Website vs CRM
+PS C:\Users\NAT2026> Write-Host "`n=== WEBSITE vs CRM CLASSIFICATION ===" -ForegroundColor Yellow
+
+=== WEBSITE vs CRM CLASSIFICATION ===
+PS C:\Users\NAT2026>
+PS C:\Users\NAT2026> $websiteFiles = @()
+PS C:\Users\NAT2026> $crmFiles = @()
+PS C:\Users\NAT2026> $sharedFiles = @()
+PS C:\Users\NAT2026> $otherFiles = @()
+PS C:\Users\NAT2026>
+PS C:\Users\NAT2026> $allFiles = Get-ChildItem -Path $rootPath -File -Recurse -Force
+PS C:\Users\NAT2026>
+PS C:\Users\NAT2026> foreach ($file in $allFiles) {
+>>     $relativePath = $file.FullName.Replace($rootPath, "").TrimStart("\")
+>>
+>>     if ($relativePath -match "^apps[/\\]web" -or $relativePath -match "^packages[/\\]content") {
+>>         $websiteFiles += $relativePath
+>>     }
+>>     elseif ($relativePath -match "^apps[/\\]api|^packages[/\\]db|^apps[/\\]app") {
+>>         $crmFiles += $relativePath
+>>     }
+>>     elseif ($relativePath -match "^packages[/\\]contracts|^packages[/\\]config" -or $relativePath -match "^infra|^\.github") {
+>>         $sharedFiles += $relativePath
+>>     }
+>>     else {
+>>         $otherFiles += $relativePath
+>>     }
+>> }
+PS C:\Users\NAT2026>
+PS C:\Users\NAT2026> Write-Host "`n📱 WEBSITE FILES: $($websiteFiles.Count) files" -ForegroundColor Green
+
+📱 WEBSITE FILES: 642 files
+PS C:\Users\NAT2026> $websiteFiles | Where-Object { $_ } | Select-Object -First 15 | ForEach-Object { Write-Host "  - $_" }
+  - apps\web\next-env.d.ts
+  - apps\web\next.config.ts
+  - apps\web\package.json
+  - apps\web\postcss.config.mjs
+  - apps\web\tsconfig.json
+  - apps\web\.next\package.json
+  - apps\web\.next\turbopack
+  - apps\web\.next\build\package.json
+  - apps\web\.next\build\chunks\node_modules__pnpm_0q5gz_g._.js
+  - apps\web\.next\build\chunks\node_modules__pnpm_0q5gz_g._.js.map
+  - apps\web\.next\build\chunks\pool_entry-[turbopack-node]_transforms_postcss_ts_16rwn4f._.js
+  - apps\web\.next\build\chunks\pool_entry-[turbopack-node]_transforms_postcss_ts_16rwn4f._.js.map
+  - apps\web\.next\build\chunks\[root-of-the-server]__0fy95ld._.js
+  - apps\web\.next\build\chunks\[root-of-the-server]__0fy95ld._.js.map
+  - apps\web\.next\build\chunks\[root-of-the-server]__0qxha8t._.js
+PS C:\Users\NAT2026> if ($websiteFiles.Count -gt 15) { Write-Host "  ... and $($websiteFiles.Count - 15) more" }
+  ... and 627 more
+PS C:\Users\NAT2026>
+PS C:\Users\NAT2026> Write-Host "`n🗄️ DATABASE/API (Backend): $($crmFiles.Count) files" -ForegroundColor Blue
+
+🗄️ DATABASE/API (Backend): 109 files
+PS C:\Users\NAT2026> $crmFiles | Where-Object { $_ } | Select-Object -First 15 | ForEach-Object { Write-Host "  - $_" }
+  - apps\api\package.json
+  - apps\api\tsconfig.build.json
+  - apps\api\tsconfig.json
+  - apps\api\vitest.config.mts
+  - apps\api\.turbo\turbo-build.log
+  - apps\api\dist\app.module.js
+  - apps\api\dist\app.module.js.map
+  - apps\api\dist\bootstrap.js
+  - apps\api\dist\bootstrap.js.map
+  - apps\api\dist\config.js
+  - apps\api\dist\config.js.map
+  - apps\api\dist\main.js
+  - apps\api\dist\main.js.map
+  - apps\api\dist\prisma.service.js
+  - apps\api\dist\prisma.service.js.map
+PS C:\Users\NAT2026> if ($crmFiles.Count -gt 15) { Write-Host "  ... and $($crmFiles.Count - 15) more" }
+  ... and 94 more
+PS C:\Users\NAT2026>
+PS C:\Users\NAT2026> Write-Host "`n🔗 SHARED PACKAGES (Web + API + Future CRM): $($sharedFiles.Count) files" -ForegroundColor Magenta
+
+🔗 SHARED PACKAGES (Web + API + Future CRM): 33 files
+PS C:\Users\NAT2026> $sharedFiles | Where-Object { $_ } | Select-Object -First 15 | ForEach-Object { Write-Host "  - $_" }
+  - .github\workflows\ci.yml
+  - infra\docker-compose.dev.yml
+  - packages\config\package.json
+  - packages\config\tsconfig.base.json
+  - packages\contracts\package.json
+  - packages\contracts\tsconfig.build.json
+  - packages\contracts\tsconfig.json
+  - packages\contracts\.turbo\turbo-build.log
+  - packages\contracts\dist\api.d.ts
+  - packages\contracts\dist\api.js
+  - packages\contracts\dist\index.d.ts
+  - packages\contracts\dist\index.js
+  - packages\contracts\dist\lead.d.ts
+  - packages\contracts\dist\lead.js
+  - packages\contracts\dist\lookups.d.ts
+PS C:\Users\NAT2026> if ($sharedFiles.Count -gt 15) { Write-Host "  ... and $($sharedFiles.Count - 15) more" }
+  ... and 18 more
+PS C:\Users\NAT2026>
+PS C:\Users\NAT2026> Write-Host "`n📄 OTHER (Docs, Config, etc): $($otherFiles.Count) files" -ForegroundColor Gray
+
+📄 OTHER (Docs, Config, etc): 33032 files
+PS C:\Users\NAT2026> $otherFiles | Where-Object { $_ } | Select-Object -First 15 | ForEach-Object { Write-Host "  - $_" }
+  - .env.example
+  - .gitignore
+  - 01-bao-cao-hien-trang.md
+  - 02-chenh-lech-schema.md
+  - 03-thong-tin-can-comtech.md
+  - 03-thong-tin-can-comtech_1.md
+  - 03-thong-tin-can-comtech_2.md
+  - comtech-one.bundle
+  - comtech-one_1.bundle
+  - comtech-one_1.zip
+  - comtech-one_3.bundle
+  - comtech-web-app-g0.bundle
+  - DEPLOYMENT.sh
+  - DEPLOY_NOW.md
+  - DEPLOY_NOW_2.md
+PS C:\Users\NAT2026> if ($otherFiles.Count -gt 15) { Write-Host "  ... and $($otherFiles.Count - 15) more" }
+  ... and 33017 more
+PS C:\Users\NAT2026>
+PS C:\Users\NAT2026> # 5. Tóm tắt
+PS C:\Users\NAT2026> Write-Host "`n=== SUMMARY ===" -ForegroundColor Cyan
+
+=== SUMMARY ===
+PS C:\Users\NAT2026> Write-Host "Total Files: $($allFiles.Count)"
+Total Files: 33816
+PS C:\Users\NAT2026> Write-Host "Website:     $($websiteFiles.Count)"
+Website:     642
+PS C:\Users\NAT2026> Write-Host "Backend API: $($crmFiles.Count)"
+Backend API: 109
+PS C:\Users\NAT2026> Write-Host "Shared:      $($sharedFiles.Count)"
+Shared:      33
+PS C:\Users\NAT2026> Write-Host "Other:       $($otherFiles.Count)"
+Other:       33032
+PS C:\Users\NAT2026>
+PS C:\Users\NAT2026> Write-Host "`n✓ Script completed.
